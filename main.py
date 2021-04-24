@@ -30,6 +30,11 @@ def stash():
     return render_template('stash.html', datahtml=s)
 
 
+@app.route('/public')
+def public():
+    return 'public'
+
+
 @app.route('/delete/<id>', methods=['GET', 'POST'])
 @login_required
 def delete(id):
@@ -88,12 +93,12 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/export/<key>')
-def export(key):
+@app.route('/export/<user>/<key>')
+def export(user, key):
     db_sess = db_session.create_session()
-    exfil = db_sess.query(Stash).filter(Stash.key == key).first()
+    username = db_sess.query(User).filter(User.name == user).first()
+    exfil = db_sess.query(Stash).filter(Stash.key == key, Stash.user_id == username.id).first()
     return jsonify(exfil.content)
-    # return render_template('pictureshower.html', sourc='http://127.0.0.1:5000/static/' + str(exfil.content))
 
 
 @app.route('/import', methods=['GET', 'POST'])
@@ -181,5 +186,6 @@ def load_user(user_id):
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    # port = int(os.environ.get("PORT", 5000))
+    # app.run(host='0.0.0.0', port=port)
+    app.run()
