@@ -160,7 +160,7 @@ def pubimport_():
             return render_template('Upload.html')
         except Exception:
             return 'Error, it might happen because key isnt unique'
-    return render_template('import.html', form=form)
+    return render_template('Pubimport.html', form=form)
 
 
 @app.route('/import', methods=['GET', 'POST'])
@@ -199,8 +199,8 @@ def randimport():
         rp2 = requests.get(answ)
         namefile = random.randint(1000, 9999)
         while namefile in filenames:
-            namefile = random.randint(1000, 9999)
-        with open(f'/static/{namefile}', 'wb') as file:
+            namefile = str(random.randint(1000, 9999)) + '.pnj'
+        with open(f'static/{namefile}', 'wb') as file:
             file.write(rp2.content)
         try:
             db_sess = db_session.create_session()
@@ -272,3 +272,4 @@ def load_user(user_id):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+    # app.run()
