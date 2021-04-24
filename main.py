@@ -6,8 +6,10 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 import os
 import random
 
+from data.reports import Reports
 from data.users import User
 from data.stash import Stash
+from data.public import Public
 from forms.RegisterForm import RegisterForm
 from forms.LoginForm import LoginForm
 from forms.UploadingForm import UploadingForm
@@ -30,9 +32,25 @@ def stash():
     return render_template('stash.html', datahtml=s)
 
 
-@app.route('/public')
-def public():
-    return 'public'
+@app.route('/pubstash')
+def pubstash():
+    db_sess = db_session.create_session()
+    s = []
+    for dbdata in db_sess.query(Public).filter(Public.show == True):
+        s.append(dbdata)
+    return render_template('pubstash.html', datahtml=s)
+
+
+@app.route('/report/<ids>')
+def report(ids):
+    db_sess = db_session.create_session()
+    data = db_sess.query(Public).filter(Public.id == ids).first()
+    data.show = False
+    Report = Reports(fileid=ids, filename=data.content)
+    db_sess.add(Report)
+    db_sess.commit()
+
+    return render_template('reportcomp.html')
 
 
 @app.route('/delete/<id>', methods=['GET', 'POST'])
@@ -44,7 +62,6 @@ def delete(id):
     db_sess.delete(data)
     os.remove(f'static/{data.content}')
     db_sess.commit()
-
     return redirect('/stash')
 
 
@@ -99,6 +116,43 @@ def export(user, key):
     username = db_sess.query(User).filter(User.name == user).first()
     exfil = db_sess.query(Stash).filter(Stash.key == key, Stash.user_id == username.id).first()
     return jsonify(exfil.content)
+
+
+@app.route('/pubexport/<key>')
+def pubexport(key):
+    db_sess = db_session.create_session()
+    exfil = db_sess.query(Public).filter(Public.key == key).first()
+    return jsonify(exfil.content)
+
+
+@app.route('/pubimport', methods=['GET', 'POST'])
+def pubimport_():
+    form = UploadingForm()
+    if form.validate_on_submit():
+        file = form.file.data
+        # filename = secure_filename(file.filename)
+        filename = file.filename
+        filenames = os.listdir('static')
+        if filename not in filenames:
+            namefile = filename
+            with open('static/' + str(filename) + '', 'wb') as fileutil:
+                fileutil.write(file.read())
+        else:
+            namefile = str(random.randint(100, 999)) + str(filename)
+            with open('static/' + namefile, 'wb') as fileutil:
+                fileutil.write(file.read())
+
+        try:
+            db_sess = db_session.create_session()
+            publ = Public(
+                content=namefile,
+                key=form.key.data)
+            db_sess.add(publ)
+            db_sess.commit()
+            return render_template('Upload.html')
+        except Exception:
+            return 'Error, it might happen because key isnt unique'
+    return render_template('import.html', form=form)
 
 
 @app.route('/import', methods=['GET', 'POST'])

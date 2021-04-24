@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1>HI</h1>
+    {% for item in datahtml %}
+    <p>
+        <img src=static/{{item.content}} width="500" height="500" alt='FileNotFound'>
+        <br>
+        {{ item.key }}
+        <a class="btn btn-danger" href="/report/{{ item.id }}">Report</a>
+        <br>
+    </p>
+    {% endfor %}
+{% endblock %}
