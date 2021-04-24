@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% if current_user.is_authenticated %}
+    <h1>HI</h1>
+    {% for item in datahtml %}
+    <p>
+        <img src=static/{{item.content}} width="500" height="500" alt='FileNotFound'>
+        <br>
+        {{ item.key }}
+        <a class="btn btn-primary" href="/edit/{{ item.id }}">Edit</a>
+        <br>
+    </p>
+    {% endfor %}
+
+{% else %}
+    <p/>
+    <a class="btn btn-primary " href="/register">Зарегистрироваться</a>
+    <a class="btn btn-success" href="/login">Войти</a>
+    </p>
+
+    </div>
+{% endif %}
+{% endblock %}
