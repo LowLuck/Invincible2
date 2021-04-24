@@ -30,6 +30,19 @@ def stash():
     return render_template('stash.html', datahtml=s)
 
 
+@app.route('/delete/<id>', methods=['GET', 'POST'])
+@login_required
+def delete(id):
+    db_sess = db_session.create_session()
+    data = db_sess.query(Stash).filter(Stash.id == id,
+                                       Stash.user_id == current_user.id).first()
+    db_sess.delete(data)
+    os.remove(f'static/{data.content}')
+    db_sess.commit()
+
+    return redirect('/stash')
+
+
 @app.route('/edit/<id>', methods=['GET', 'POST'])
 @login_required
 def edit(id):
@@ -43,7 +56,6 @@ def edit(id):
         else:
             return 'Error'
     if request.method == "POST":
-        print(24)
         db_sess = db_session.create_session()
         data = db_sess.query(Stash).filter(Stash.id == id,
                                            Stash.user_id == current_user.id).first()
@@ -93,16 +105,18 @@ def import_():
         filename = file.filename
         filenames = os.listdir('static')
         if filename not in filenames:
+            namefile = filename
             with open('static/' + str(filename) + '', 'wb') as fileutil:
                 fileutil.write(file.read())
         else:
-            with open('static/' + str(random.randint(100, 999)) + str(filename), 'wb') as fileutil:
+            namefile = str(random.randint(100, 999)) + str(filename)
+            with open('static/' + namefile, 'wb') as fileutil:
                 fileutil.write(file.read())
 
         try:
             db_sess = db_session.create_session()
             stash = Stash(
-                content=filename,
+                content=namefile,
                 user_id=current_user.id,
                 key=form.key.data)
 
@@ -167,5 +181,4 @@ def load_user(user_id):
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run()

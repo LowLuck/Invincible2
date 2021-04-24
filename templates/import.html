@@ -19,11 +19,15 @@
         {{ form.file.label }}<br>
         {{ form.file(class="form-control") }}<br>
         {% for error in form.file.errors %}
+
     <p class="alert alert-danger" role="alert">
         {{ error }}
     </p>
     {% endfor %}
     </p>
+
+    <br>
+    <p>ВНИМАНИЕ! Для корректной работы сайта рекомендуется загружать файлы с названиями только из латниских символов и цифр</p>
 
     <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
         {{message}}
