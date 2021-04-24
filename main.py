@@ -5,6 +5,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 # from werkzeug import secure_filename
 import os
 import random
+import requests
 
 from data.reports import Reports
 from data.users import User
@@ -13,6 +14,7 @@ from data.public import Public
 from forms.RegisterForm import RegisterForm
 from forms.LoginForm import LoginForm
 from forms.UploadingForm import UploadingForm
+from forms.RandimpForm import RandimpForm
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
@@ -125,6 +127,18 @@ def pubexport(key):
     return jsonify(exfil.content)
 
 
+def imgsave(cond, filename, data):
+    if cond:
+        namefile = filename
+        with open('static/' + str(filename) + '', 'wb') as fileutil:
+            fileutil.write(data)
+    else:
+        namefile = str(random.randint(100, 999)) + str(filename)
+        with open('static/' + namefile, 'wb') as fileutil:
+            fileutil.write(data)
+    return namefile
+
+
 @app.route('/pubimport', methods=['GET', 'POST'])
 def pubimport_():
     form = UploadingForm()
@@ -133,14 +147,8 @@ def pubimport_():
         # filename = secure_filename(file.filename)
         filename = file.filename
         filenames = os.listdir('static')
-        if filename not in filenames:
-            namefile = filename
-            with open('static/' + str(filename) + '', 'wb') as fileutil:
-                fileutil.write(file.read())
-        else:
-            namefile = str(random.randint(100, 999)) + str(filename)
-            with open('static/' + namefile, 'wb') as fileutil:
-                fileutil.write(file.read())
+        data = file.read()
+        namefile = imgsave(filename not in filenames, filename, data)
 
         try:
             db_sess = db_session.create_session()
@@ -163,14 +171,8 @@ def import_():
         # filename = secure_filename(file.filename)
         filename = file.filename
         filenames = os.listdir('static')
-        if filename not in filenames:
-            namefile = filename
-            with open('static/' + str(filename) + '', 'wb') as fileutil:
-                fileutil.write(file.read())
-        else:
-            namefile = str(random.randint(100, 999)) + str(filename)
-            with open('static/' + namefile, 'wb') as fileutil:
-                fileutil.write(file.read())
+        data = file.read()
+        namefile = imgsave(filename not in filenames, filename, data)
 
         try:
             db_sess = db_session.create_session()
@@ -185,6 +187,34 @@ def import_():
         except Exception:
             return 'Error, it might happen because key isnt unique'
     return render_template('import.html', form=form)
+
+
+@app.route('/randimport', methods=['GET', 'POST'])
+def randimport():
+    form = RandimpForm()
+    if form.validate_on_submit():
+        filenames = os.listdir('static')
+        rp = requests.get("https://api.thecatapi.com/v1/images/search").json()
+        answ = rp[0]['url']
+        rp2 = requests.get(answ)
+        namefile = random.randint(1000, 9999)
+        while namefile in filenames:
+            namefile = random.randint(1000, 9999)
+        with open(f'/static/{namefile}', 'wb') as file:
+            file.write(rp2.content)
+        try:
+            db_sess = db_session.create_session()
+            stash = Stash(
+                content=namefile,
+                user_id=current_user.id,
+                key=form.key.data)
+
+            db_sess.add(stash)
+            db_sess.commit()
+            return render_template('Upload.html')
+        except Exception:
+            return 'Error'
+    return render_template('randimport.html', form=form)
 
 
 @app.route('/register', methods=['GET', 'POST'])
